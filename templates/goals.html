@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Goals{% endblock %}
+
+{% block content %}
+<div class="goals-editor">
+    <h2>Edit Your Goals</h2>
+    <p class="subtitle">Customize your 5 daily goals for the challenge</p>
+    
+    <form method="POST" class="goals-form">
+        {% for goal in goals %}
+        <div class="form-group">
+            <label for="goal-{{ loop.index }}">Goal {{ loop.index }}</label>
+            <input type="hidden" name="goal_id[]" value="{{ goal.id }}">
+            <input type="text" 
+                   id="goal-{{ loop.index }}" 
+                   name="goal_text[]" 
+                   value="{{ goal.goal_text }}" 
+                   required>
+        </div>
+        {% endfor %}
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Goals</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+    
+    <div class="info-box">
+        <h4>💡 Tips for Setting Goals</h4>
+        <ul>
+            <li>Be specific and measurable</li>
+            <li>Make them challenging but achievable</li>
+            <li>Include both physical and mental goals</li>
+            <li>Consider goals that build good habits</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

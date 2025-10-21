@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Challenge Settings{% endblock %}
+
+{% block content %}
+<div class="settings">
+    <h2>Challenge Settings</h2>
+    <p class="subtitle">Configure the challenge start date</p>
+    
+    <form method="POST" class="settings-form">
+        <div class="form-group">
+            <label for="start_date">Challenge Start Date</label>
+            <input type="date" 
+                   id="start_date" 
+                   name="start_date" 
+                   value="{{ challenge.start_date.strftime('%Y-%m-%d') }}" 
+                   required>
+            <p class="help-text">
+                This date applies to all users. Changing it will reset the challenge timeline.
+            </p>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Update Start Date</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+    
+    <div class="info-box warning">
+        <h4>⚠️ Important Notes</h4>
+        <ul>
+            <li>All users share the same challenge timeline</li>
+            <li>Changing the start date affects everyone</li>
+            <li>Progress tracking is based on days since start date</li>
+            <li>Set this before the challenge begins for best results</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
