@@ -1,2 +1,30 @@
-/.env
-/__pycache__
+# Environment and secrets
+.env
+*.env.local
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Database files
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE and OS files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code notes
+claude_notes

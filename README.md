@@ -1,238 +1,308 @@
 # 75 Hard Challenge Tracker
 
-A Dockerized multi-user web application for tracking progress through the 75 Hard Challenge. Built with Flask, HTMX, and SQLite - optimized for Raspberry Pi deployment.
+A multi-user web application for tracking the [75 Hard Challenge](https://andyfrisella.com/pages/75hard-info) - a 75-day personal development program. Built with Flask and optimized for deployment on Raspberry Pi.
 
-## 🎯 Features
+## Features
 
-- **Multi-User Support**: Shared challenge timeline with individual tracking
-- **Flexible Goals**: Each user can customize their 5 daily goals anytime
-- **Real-Time Progress**: Check off goals with instant feedback using HTMX
-- **Transparent Scoreboard**: View everyone's progress and goals
-- **Motivational Feedback**: Contextual encouragement based on progress
-- **Secure Authentication**: Password-based login system
-- **Docker Ready**: Easy deployment on Raspberry Pi or any platform
-- **Pi Optimized**: Lightweight containers with ARM64 support
+- 🏋️ Multi-user progress tracking with shared 75-day timeline
+- ✅ Daily goal check-offs with HTMX for smooth interactions
+- 📊 Transparent scoreboard showing everyone's progress and streaks
+- 🎯 Customizable goals per user (default: 5 goals)
+- 🔒 Secure authentication with password hashing
+- 🐳 Docker-ready for easy deployment
+- 🥧 Raspberry Pi optimized (ARM architecture, resource limits)
+- ⚡ Production-ready with Gunicorn WSGI server
 
-## 🚀 Quick Start
+## Tech Stack
+
+- **Backend**: Flask 2.0+, SQLAlchemy, Flask-Login
+- **Frontend**: Jinja2 templates, HTMX, CSS
+- **Database**: SQLite (lightweight, perfect for Pi)
+- **Production Server**: Gunicorn (WSGI server)
+- **Deployment**: Docker + Docker Compose
+
+## Quick Start (Docker)
 
 ### Prerequisites
 
-- Raspberry Pi (any model with 2GB+ RAM recommended)
-- Python 3.7+ (pre-installed on most Pi OS versions)
+- Docker and Docker Compose installed
+- For Raspberry Pi: Use the automated deployment script (see below)
 
-## Deployment Options
-
-### Option 1: Docker (Recommended)
+### Local Development
 
 ```bash
-# Install Docker first
-chmod +x install_docker_pi.sh
-sudo ./install_docker_pi.sh
+# Clone the repository
+git clone <your-repo-url>
+cd 75med
 
-# Deploy the app
+# Create .env file
+cat > .env << EOF
+FLASK_ENV=development
+SECRET_KEY=$(openssl rand -hex 32)
+DATABASE_URL=sqlite:///instance/75hard.db
+EOF
+
+# Start with Docker Compose (use docker-compose or docker compose depending on your version)
+docker compose up -d
+# OR: docker-compose up -d
+
+# Access the app (note: port 5001 to avoid macOS AirPlay conflict)
+open http://localhost:5001
+```
+
+**Notes**:
+- This project supports both `docker compose` (v2) and `docker-compose` (v1). The scripts will auto-detect which version you have.
+- **Port 5001**: We use port 5001 to avoid conflict with macOS AirPlay (which uses port 5000). Access at `http://localhost:5001`.
+
+## Deployment to Raspberry Pi
+
+### Automated Deployment (Recommended)
+
+The included script handles everything automatically:
+
+```bash
+# Make the script executable (first time only)
+chmod +x deploy_to_pi.sh
+
+# Deploy to your Raspberry Pi
+./deploy_to_pi.sh <raspberry-pi-ip-or-hostname>
+
+# Example:
+./deploy_to_pi.sh raspberrypi.local
+# or
+./deploy_to_pi.sh 192.168.1.100
+
+# To build the Docker image on the Pi (slower but saves local resources):
+./deploy_to_pi.sh raspberrypi.local --build-on-pi
+```
+
+The script will:
+1. ✅ Test SSH connection to your Pi
+2. ✅ Sync application files via rsync
+3. ✅ Create `.env` file with secure random SECRET_KEY
+4. ✅ Install Docker if not present
+5. ✅ Build and start the Docker container
+6. ✅ Verify the application is running
+
+### Manual Deployment
+
+If you prefer manual control:
+
+```bash
+# 1. Copy files to your Raspberry Pi
+rsync -avz --exclude '__pycache__' --exclude '.git' \
+  ./ pi@raspberrypi.local:/home/pi/75hard/
+
+# 2. SSH into your Pi
+ssh pi@raspberrypi.local
+
+# 3. Navigate to the app directory
+cd /home/pi/75hard
+
+# 4. Create .env file
+cat > .env << EOF
+FLASK_ENV=production
+SECRET_KEY=$(openssl rand -hex 32)
+DATABASE_URL=sqlite:///instance/75hard.db
+EOF
+
+# 5. Install Docker (if not installed)
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker pi
+# Logout and login again for group changes
+
+# 6. Start the application
 docker-compose up -d
+
+# 7. Check if running
+docker-compose ps
 ```
-
-### Option 2: Direct Python (Simpler)
-
-```bash
-# Transfer files to Pi
-scp -r 75med/ pi@raspberry-pi-ip:~/
-
-# Run deployment script
-python3 deploy_pi.py
-
-# Or manually:
-python3 -m pip install -r requirements.txt
-mkdir -p instance
-python3 app.py
-```
-
-### Access the Application
-
-Navigate to `http://your-raspberry-pi-ip:5000`
-
-4. **Create accounts** and set your goals!
 
 ### First Time Setup
 
-- One user should go to Settings > Challenge Settings to set the start date
-- Other users can register and will automatically be added to the same timeline
-- Each user gets default 75 Hard goals but can customize them anytime
+1. Navigate to `http://<your-raspberry-pi-ip>:5000`
+2. Create an account (first user)
+3. Go to Settings > Challenge Settings to set the start date
+4. Invite others to register - they'll join the same timeline
+5. Customize your goals in "My Goals"
 
-## 🏗️ Architecture
+## Managing Your Deployment
 
-### Tech Stack
-- **Backend**: Flask + SQLAlchemy
-- **Frontend**: Jinja2 templates + HTMX
-- **Database**: SQLite (Raspberry Pi optimized)
-- **Authentication**: Flask-Login with session persistence
-- **Container**: Docker with docker-compose
+**Note**: Use `docker compose` or `docker-compose` depending on your version. Examples below use `docker compose`.
 
-### Database Schema
+### View Logs
 
-- **Users**: Account information and authentication
-- **Challenge**: Global timeline (single active challenge)
-- **Goals**: Customizable daily objectives per user
-- **Daily Progress**: Check-off tracking per goal per day
+```bash
+# SSH into Pi
+ssh pi@raspberrypi.local
 
-### API Endpoints
+# View logs
+cd /home/pi/75hard
+docker compose logs -f
+```
 
-- **Authentication**: `/login`, `/register`, `/logout`
-- **Dashboard**: `/` (redirects to dashboard when logged in)
-- **Goals**: `/goals` (GET/POST for viewing/editing)
-- **Progress**: `/progress/toggle/<goal_id>` (HTMX endpoint)
-- **Scoreboard**: `/scoreboard`
-- **Settings**: `/challenge/settings`
+### Stop/Start/Restart
 
-## 🔧 Configuration
+```bash
+# Stop
+docker compose down
+
+# Start
+docker compose up -d
+
+# Restart
+docker compose restart
+
+# Check status
+docker compose ps
+```
+
+### Update Application
+
+```bash
+# From your local machine
+./deploy_to_pi.sh raspberrypi.local
+```
+
+### Backup Database
+
+```bash
+# SSH into Pi
+ssh pi@raspberrypi.local
+
+# Create backup
+docker cp 75hard-app:/app/instance/75hard.db ~/75hard_backup_$(date +%Y%m%d).db
+
+# Copy backup to local machine (from your computer)
+scp pi@raspberrypi.local:~/75hard_backup_*.db ./
+```
+
+## Configuration
 
 ### Environment Variables
 
-Set these in `docker-compose.yml`:
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `FLASK_ENV` | Environment (development/production) | `production` |
+| `SECRET_KEY` | Flask session encryption key | Auto-generated |
+| `DATABASE_URL` | SQLite database path | `sqlite:///instance/75hard.db` |
 
-```yaml
-environment:
-  - SECRET_KEY=your-unique-secret-key-here
-  - DATABASE_URL=sqlite:///75hard.db  # Persistent SQLite file
-  - FLASK_ENV=production
+### Docker Resource Limits (Raspberry Pi)
+
+Configured in [docker-compose.yml](docker-compose.yml):
+- **CPU**: 1.0 core max, 0.25 reserved
+- **Memory**: 512MB limit, 128MB reserved
+- **Health Check**: Every 30s with 3 retries
+- **Workers**: 2 Gunicorn workers with 2 threads each
+
+## Default Goals
+
+New users automatically get these 5 goals:
+1. Complete two 45-minute workouts (one must be outdoors)
+2. Follow a diet (no alcohol or cheat meals)
+3. Drink 1 gallon of water
+4. Read 10 pages of a non-fiction book
+5. Take a progress photo
+
+Goals can be customized in the app settings.
+
+## Troubleshooting
+
+### Can't Connect to Raspberry Pi
+
+```bash
+# Check SSH is enabled on Pi
+# Enable via: sudo raspi-config → Interface Options → SSH
+
+# Test connection
+ssh pi@raspberrypi.local
 ```
 
-### Challenge Timeline
+### Container Won't Start
 
-By default, the challenge starts today. To change:
-1. Log in as any user
-2. Navigate to Settings > Challenge Settings
-3. Update the challenge start date
-4. **Important**: This affects all users
-
-### Resource Limits (Raspberry Pi)
-
-The docker-compose includes Pi-optimized resource limits:
-- CPU: 1 core maximum, 0.25 reserved
-- RAM: 512MB limit, 128MB reserved
-
-Adjust based on your Pi model (4GB RAM recommended).
-
-## 📊 Usage
-
-### For Users
-
-1. **Register/Login**: Create your account with username/password
-2. **Dashboard**: View your daily goals and check them off
-3. **Progress Tracking**: Visual progress bar shows completion %
-4. **Scoreboard**: See how everyone is doing (including goals)
-5. **Goal Editing**: Customize your 5 daily goals anytime via "My Goals"
-
-### For Households
-
-- **Shared Timeline**: Everyone on the same 75-day schedule
-- **Full Transparency**: See each other's goals and progress
-- **Motivation**: Compete kindly while supporting each other
-- **Easy Scaling**: Add family members anytime
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-**Container Won't Start:**
 ```bash
 # Check logs
-docker-compose logs 75hard-app
+docker compose logs
 
-# Restart service
-docker-compose restart 75hard-app
+# Rebuild container
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
-**Database Issues:**
-```bash
-# Reset database (WARNING: destroys all data)
-docker-compose down
-sudo rm -rf data/
-docker-compose up -d
-```
-
-**Port Conflicts:**
-- Change port in `docker-compose.yml`: `ports: - "5001:5000"`
-
-**High CPU/Memory Usage:**
-- Monitor with `docker stats`
-- Adjust resource limits in `docker-compose.yml`
-
-### Raspberry Pi Specific
-
-**Slow Performance:**
-- Ensure adequate cooling
-- Increase memory limits if possible
-- Consider SQLite WAL mode for better concurrency
-
-**Storage Issues:**
-- SQLite database grows over time
-- Monitor disk space: `df -h`
-
-## 🚀 Advanced Configuration
-
-### Custom Domain
-
-Use nginx-proxy or traefik:
-
-```yaml
-# Add to docker-compose.yml
-services:
-  nginx-proxy:
-    image: nginxproxy/nginx-proxy:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-
-  75hard-app:
-    environment:
-      - VIRTUAL_HOST=75hard.yourdomain.com
-      - LETSENCRYPT_HOST=75hard.yourdomain.com
-      - LETSENCRYPT_EMAIL=your-email@domain.com
-```
-
-### Backup Strategy
+### Permission Errors
 
 ```bash
-# Backup script
-#!/bin/bash
-docker-compose exec 75hard-app sqlite3 /app/instance/75hard.db .dump > backup_$(date +%Y%m%d_%H%M%S).sql
+# Ensure pi user is in docker group
+sudo usermod -aG docker pi
 
-# Restore
-docker-compose exec -T 75hard-app sqlite3 /app/instance/75hard.db < backup.sql
+# Logout and login again
 ```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test on your Pi/other devices
-5. Submit a pull request
-
-### Development Setup
+### Database Issues
 
 ```bash
-# Local development (non-Docker)
+# Reset database (WARNING: deletes all data)
+docker compose down
+docker volume rm 75med_sqlite_data
+docker compose up -d
+```
+
+## Development
+
+### Running Locally Without Docker
+
+```bash
+# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
-export FLASK_ENV=development
+
+# Create .env file
+cat > .env << EOF
+FLASK_ENV=development
+SECRET_KEY=dev-secret-key
+DATABASE_URL=sqlite:///instance/75hard.db
+EOF
+
+# Run app
 python app.py
+
+# Access at http://localhost:5000
 ```
 
-## 📄 License
+### Project Structure
 
-MIT License - feel free to use this for your own family or community!
+```
+75med/
+├── app.py                 # Main Flask application
+├── models.py              # Database models
+├── config.py              # Flask configuration
+├── requirements.txt       # Python dependencies
+├── Dockerfile             # Docker image definition
+├── docker-compose.yml     # Docker orchestration
+├── deploy_to_pi.sh        # Automated deployment script
+├── .dockerignore          # Files to exclude from Docker build
+├── templates/             # Jinja2 HTML templates
+│   ├── base.html
+│   ├── dashboard.html
+│   ├── login.html
+│   ├── register.html
+│   ├── goals.html
+│   ├── scoreboard.html
+│   └── challenge_settings.html
+└── static/
+    └── css/
+        └── style.css      # Custom styles
+```
 
-## 🙏 Acknowledgments
+## License
 
-- 75 Hard program created by Andy Frisella
-- Flask and HTMX communities
-- Raspberry Pi enthusiasts everywhere
+This project is open source and available under the MIT License.
 
 ---
 
-**Remember**: This is a 75-day commitment that will change your life! Stay strong, and remember... you CAN do this! 💪
+**Made with ❤️ for the 75 Hard Challenge community**

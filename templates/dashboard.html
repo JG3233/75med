@@ -15,6 +15,28 @@
         {% endif %}
     </div>
 
+    <!-- Day Navigation -->
+    <div class="day-navigation">
+        <a href="{{ url_for('dashboard', day=selected_day - 1) }}"
+           class="btn btn-nav {% if selected_day <= 1 %}disabled{% endif %}">
+            ← Previous
+        </a>
+        <div class="day-selector">
+            <label for="day-select">Viewing Day:</label>
+            <select id="day-select" onchange="window.location.href='/dashboard/' + this.value">
+                {% for d in range(1, 76) %}
+                    <option value="{{ d }}" {% if d == selected_day %}selected{% endif %}>
+                        Day {{ d }}{% if d == current_day %} (Today){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <a href="{{ url_for('dashboard', day=selected_day + 1) }}"
+           class="btn btn-nav {% if selected_day >= 75 %}disabled{% endif %}">
+            Next →
+        </a>
+    </div>
+
     <div class="progress-section">
         <h3>Your Progress</h3>
         <div class="progress-bar-container">
@@ -47,18 +69,21 @@
         {% endif %}
     </div>
 
-    {% if current_day > 0 and current_day <= 75 %}
+    {% if selected_day > 0 and selected_day <= 75 %}
     <div class="daily-goals">
-        <h3>Today's Goals</h3>
+        <h3>{% if selected_day == current_day %}Today's Goals{% else %}Day {{ selected_day }} Goals{% endif %}</h3>
+        {% if selected_day != current_day %}
+            <p class="day-info">Editing historical day - changes are saved automatically</p>
+        {% endif %}
         <form class="goals-checklist">
             {% for goal in goals %}
             <div class="goal-item">
                 <label>
-                    <input type="checkbox" 
-                           hx-post="/progress/toggle/{{ goal.id }}"
+                    <input type="checkbox"
+                           hx-post="/progress/toggle/{{ goal.id }}/{{ selected_day }}"
                            hx-target="this"
                            hx-swap="outerHTML"
-                           {% if today_progress.get(goal.id) %}checked{% endif %}>
+                           {% if day_progress.get(goal.id) %}checked{% endif %}>
                     <span class="goal-text">{{ goal.goal_text }}</span>
                 </label>
             </div>

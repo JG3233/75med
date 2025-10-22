@@ -5,27 +5,34 @@
 {% block content %}
 <div class="goals-editor">
     <h2>Edit Your Goals</h2>
-    <p class="subtitle">Customize your 5 daily goals for the challenge</p>
-    
-    <form method="POST" class="goals-form">
-        {% for goal in goals %}
-        <div class="form-group">
-            <label for="goal-{{ loop.index }}">Goal {{ loop.index }}</label>
-            <input type="hidden" name="goal_id[]" value="{{ goal.id }}">
-            <input type="text" 
-                   id="goal-{{ loop.index }}" 
-                   name="goal_text[]" 
-                   value="{{ goal.goal_text }}" 
-                   required>
+    <p class="subtitle">Customize your daily goals for the challenge (add or remove as needed)</p>
+
+    <form method="POST" class="goals-form" id="goals-form">
+        <div id="goals-container">
+            {% for goal in goals %}
+            <div class="goal-input-group">
+                <div class="form-group">
+                    <label for="goal-{{ loop.index }}">Goal {{ loop.index }}</label>
+                    <input type="hidden" name="goal_id[]" value="{{ goal.id }}">
+                    <input type="text"
+                           id="goal-{{ loop.index }}"
+                           name="goal_text[]"
+                           value="{{ goal.goal_text }}"
+                           required>
+                </div>
+                <button type="button" class="btn btn-danger btn-small remove-goal" onclick="removeGoal(this)">Remove</button>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-        
+
+        <button type="button" class="btn btn-secondary" onclick="addGoal()">+ Add Goal</button>
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Save Goals</button>
             <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
-    
+
     <div class="info-box">
         <h4>💡 Tips for Setting Goals</h4>
         <ul>
@@ -33,7 +40,91 @@
             <li>Make them challenging but achievable</li>
             <li>Include both physical and mental goals</li>
             <li>Consider goals that build good habits</li>
+            <li>You can have as many or as few goals as you want</li>
         </ul>
     </div>
 </div>
+
+<script>
+let goalCounter = {{ goals|length }};
+
+function addGoal() {
+    goalCounter++;
+    const container = document.getElementById('goals-container');
+    const goalGroup = document.createElement('div');
+    goalGroup.className = 'goal-input-group';
+    goalGroup.innerHTML = `
+        <div class="form-group">
+            <label for="goal-${goalCounter}">Goal ${goalCounter}</label>
+            <input type="hidden" name="goal_id[]" value="">
+            <input type="text"
+                   id="goal-${goalCounter}"
+                   name="goal_text[]"
+                   placeholder="Enter your goal"
+                   required>
+        </div>
+        <button type="button" class="btn btn-danger btn-small remove-goal" onclick="removeGoal(this)">Remove</button>
+    `;
+    container.appendChild(goalGroup);
+    updateGoalLabels();
+}
+
+function removeGoal(button) {
+    const goalGroup = button.closest('.goal-input-group');
+    const container = document.getElementById('goals-container');
+
+    // Only allow removal if there's more than 1 goal
+    if (container.children.length <= 1) {
+        alert('You must have at least one goal!');
+        return;
+    }
+
+    goalGroup.remove();
+    updateGoalLabels();
+}
+
+function updateGoalLabels() {
+    const container = document.getElementById('goals-container');
+    const goalGroups = container.querySelectorAll('.goal-input-group');
+    goalGroups.forEach((group, index) => {
+        const label = group.querySelector('label');
+        const input = group.querySelector('input[type="text"]');
+        label.textContent = `Goal ${index + 1}`;
+        label.setAttribute('for', `goal-${index + 1}`);
+        input.id = `goal-${index + 1}`;
+    });
+}
+</script>
+
+<style>
+.goal-input-group {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 15px;
+}
+
+.goal-input-group .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.btn-small {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    height: fit-content;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+#goals-container {
+    margin-bottom: 20px;
+}
+</style>
 {% endblock %}

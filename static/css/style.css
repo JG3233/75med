@@ -640,3 +640,94 @@ footer {
         font-size: 20px;
     }
 }
+
+/* Day Navigation Styles */
+.day-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+}
+
+.day-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.day-selector label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.day-selector select {
+    padding: 8px 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.day-selector select:hover {
+    border-color: var(--primary-color);
+}
+
+.day-selector select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.btn-nav {
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-nav:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+.btn-nav.disabled {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.day-info {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #fff3cd;
+    border-radius: 8px;
+    border-left: 4px solid var(--warning-color);
+}
+
+@media (max-width: 768px) {
+    .day-navigation {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .btn-nav {
+        width: 100%;
+        text-align: center;
+    }
+}

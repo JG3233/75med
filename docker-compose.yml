@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   75hard-app:
     build: .
     ports:
-      - "5000:5000"
+      - "5001:5000"  # Mac: 5001 (AirPlay conflict). Pi: change to "5000:5000" or any free port
     environment:
       - SECRET_KEY=your-secret-key-change-in-production
       - DATABASE_URL=sqlite:///75hard.db

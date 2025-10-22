@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Environment files (create on server)
+.env
+.env.local
+
+# Database (create in volume)
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Deployment scripts (not needed in container)
+deploy_pi.py
+test_deploy.py
+install_docker_pi.sh
+final_deploy.sh
+start_app.sh
+deploy_to_pi.sh
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml

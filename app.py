@@ -111,36 +111,45 @@ def logout():
 
 # Dashboard
 @app.route('/dashboard')
+@app.route('/dashboard/<int:day>')
 @login_required
-def dashboard():
+def dashboard(day=None):
     challenge = Challenge.query.first()
     current_day = challenge.get_current_day()
-    
+
+    # If no day specified, default to current day
+    if day is None:
+        day = current_day
+
+    # Ensure day is within valid range
+    day = max(1, min(day, 75))
+
     goals = Goal.query.filter_by(user_id=current_user.id).order_by(Goal.order).all()
-    
-    # Get today's progress
-    today_progress = {}
-    if current_day > 0:
+
+    # Get progress for the selected day
+    day_progress = {}
+    if day > 0:
         progress_records = DailyProgress.query.filter_by(
             user_id=current_user.id,
-            day_number=current_day
+            day_number=day
         ).all()
-        today_progress = {p.goal_id: p.completed for p in progress_records}
-    
-    # Calculate overall progress
+        day_progress = {p.goal_id: p.completed for p in progress_records}
+
+    # Calculate overall progress (up to current day, not selected day)
     total_possible = len(goals) * min(current_day, 75)
     completed_count = DailyProgress.query.filter_by(
         user_id=current_user.id,
         completed=True
     ).filter(DailyProgress.day_number <= current_day).count()
-    
+
     progress_percentage = (completed_count / total_possible * 100) if total_possible > 0 else 0
-    
+
     return render_template('dashboard.html',
                          challenge=challenge,
                          current_day=current_day,
+                         selected_day=day,
                          goals=goals,
-                         today_progress=today_progress,
+                         day_progress=day_progress,
                          progress_percentage=progress_percentage,
                          completed_count=completed_count,
                          total_possible=total_possible)
@@ -150,49 +159,77 @@ def dashboard():
 @login_required
 def manage_goals():
     if request.method == 'POST':
-        # Update goals
+        # Get submitted data
         goal_ids = request.form.getlist('goal_id[]')
         goal_texts = request.form.getlist('goal_text[]')
-        
-        for goal_id, goal_text in zip(goal_ids, goal_texts):
-            if goal_id and goal_text:
-                goal = Goal.query.get(int(goal_id))
-                if goal and goal.user_id == current_user.id:
-                    goal.goal_text = goal_text
-        
+
+        # Get current goals
+        current_goals = Goal.query.filter_by(user_id=current_user.id).all()
+        current_goal_ids = {g.id for g in current_goals}
+        submitted_goal_ids = {int(gid) for gid in goal_ids if gid}
+
+        # Delete goals that were removed
+        goals_to_delete = current_goal_ids - submitted_goal_ids
+        for goal_id in goals_to_delete:
+            goal = Goal.query.get(goal_id)
+            if goal and goal.user_id == current_user.id:
+                db.session.delete(goal)
+
+        # Update existing goals and add new ones
+        for idx, (goal_id, goal_text) in enumerate(zip(goal_ids, goal_texts), 1):
+            if goal_text.strip():  # Only process non-empty goals
+                if goal_id:  # Existing goal
+                    goal = Goal.query.get(int(goal_id))
+                    if goal and goal.user_id == current_user.id:
+                        goal.goal_text = goal_text
+                        goal.order = idx
+                else:  # New goal
+                    new_goal = Goal(
+                        user_id=current_user.id,
+                        goal_text=goal_text,
+                        order=idx
+                    )
+                    db.session.add(new_goal)
+
         db.session.commit()
         flash('Goals updated successfully!', 'success')
         return redirect(url_for('dashboard'))
-    
+
     goals = Goal.query.filter_by(user_id=current_user.id).order_by(Goal.order).all()
     return render_template('goals.html', goals=goals)
 
 # Progress tracking
 @app.route('/progress/toggle/<int:goal_id>', methods=['POST'])
+@app.route('/progress/toggle/<int:goal_id>/<int:day>', methods=['POST'])
 @login_required
-def toggle_progress(goal_id):
+def toggle_progress(goal_id, day=None):
     challenge = Challenge.query.first()
     current_day = challenge.get_current_day()
-    
-    if current_day < 1 or current_day > 75:
-        return 'Challenge not active', 400
-    
+
+    # If no day specified, use current day
+    if day is None:
+        day = current_day
+
+    # Validate day is in range
+    if day < 1 or day > 75:
+        return 'Invalid day', 400
+
     goal = Goal.query.get_or_404(goal_id)
     if goal.user_id != current_user.id:
         return 'Unauthorized', 403
-    
+
     # Find or create progress record
     progress = DailyProgress.query.filter_by(
         user_id=current_user.id,
         goal_id=goal_id,
-        day_number=current_day
+        day_number=day
     ).first()
-    
+
     if not progress:
         progress = DailyProgress(
             user_id=current_user.id,
             goal_id=goal_id,
-            day_number=current_day,
+            day_number=day,
             completed=True,
             completed_at=datetime.utcnow()
         )
@@ -200,7 +237,7 @@ def toggle_progress(goal_id):
     else:
         progress.completed = not progress.completed
         progress.completed_at = datetime.utcnow() if progress.completed else None
-    
+
     db.session.commit()
     
     # Return updated checkbox HTML
@@ -283,4 +320,6 @@ def challenge_settings():
     return render_template('challenge_settings.html', challenge=challenge)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Use debug mode only in development, not in production
+    debug_mode = os.environ.get('FLASK_ENV') != 'production'
+    app.run(host='0.0.0.0', port=5000, debug=debug_mode)
